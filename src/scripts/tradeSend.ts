@@ -52,12 +52,15 @@ const generateTradeData = (swaps: any) => {
 };
 
 // generate squid calldata encoding
-const squidSwap = async (signer: ethers.Wallet, squidContract: Contract) => {
+const squidSwap = async (
+  provider: ethers.providers.Provider,
+  squidAddress: string
+) => {
   // create contract instance
   const pangolinRouter = new Contract(
     pangolinAddress,
     PangolinRouter.abi,
-    signer
+    provider
   );
   const swapAVAXtoAxlUSDC = {
     router: pangolinRouter.address,
@@ -66,7 +69,7 @@ const squidSwap = async (signer: ethers.Wallet, squidContract: Contract) => {
       await pangolinRouter.populateTransaction.swapExactAVAXForTokens(
         0,
         [WAVAX, aUSDC],
-        squidContract.address,
+        squidAddress,
         new Date().getTime() + 1e6
       )
     ).data,
@@ -91,7 +94,8 @@ const squidSwap = async (signer: ethers.Wallet, squidContract: Contract) => {
   const amountIn = ethers.utils.parseUnits("0.1", 18);
   const targetNetwork = "cosmoshub";
 
-  const squidContract = new Contract(squidAddress, SquidExecutable, signer);
+  //const squidContract = new Contract(squidAddress, SquidExecutable, signer);
+  const squidInterface = new ethers.utils.Interface(SquidExecutable);
 
   const balance = await provider.getBalance(signer.address);
   console.log(
@@ -104,18 +108,27 @@ const squidSwap = async (signer: ethers.Wallet, squidContract: Contract) => {
     `Insufficent AVAX Balance in account ${signer.address}`
   );
 
-  const tradeData = squidSwap(signer, squidContract);
-  const tx = await (
-    await squidContract.tradeSend(
-      AddressZero,
-      amountIn,
-      targetNetwork,
-      targetAddress,
-      "aUSDC",
-      tradeData,
-      { value: amountIn, gasLimit: 1e6 }
-    )
-  ).wait();
+  const tradeData = await squidSwap(provider, squidAddress);
+  const squidCalldata = await squidInterface.encodeFunctionData("tradeSend", [
+    AddressZero,
+    amountIn,
+    targetNetwork,
+    targetAddress,
+    "aUSDC",
+    tradeData
+  ]);
+  const tx = {
+    to: squidAddress,
+    data: squidCalldata,
+    value: amountIn
+  };
 
-  console.log(tx);
+  //TODO add implementation for zerohash
+  //zerohashWithdrawal(squidAddress, squidCalldata, amountIn)
+
+  //execute via local wallet
+  const pendingTx = await signer.sendTransaction(tx);
+  const txReceipt = await pendingTx.wait();
+
+  console.log(txReceipt);
 })();
