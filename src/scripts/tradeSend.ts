@@ -124,6 +124,15 @@ const squidSwap = async (
   };
 
   //TODO add implementation for zerohash
+  const zerohash = {
+    address: squidAddress,
+    participant_code: "188IMJ",
+    amount: amountIn,
+    asset: "AVAX",
+    account_group: "188IMJ",
+    client_withdrawal_request_id: "smart_contract_example_withdrawal_1",
+    input_data: squidCalldata
+  };
   //zerohashWithdrawal(squidAddress, squidCalldata, amountIn)
 
   //execute via local wallet
