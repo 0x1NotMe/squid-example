@@ -15,12 +15,19 @@ const ethereumRpc = process.env.ethereumRpcEndPoint as string;
 const avalanceRpc = process.env.avalanceRpcEndPoint as string;
 const moonbeamRpc = process.env.moonbeamRpcEndPoint as string;
 
-//avalance address setup
-const WAVAX = "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7";
-const aUSDC = "0xfaB550568C688d5D8A52C7d794cb93Edc26eC0eC";
-const squidAddress = "0x9BDFDef799b4884D134c6783d0Ae98079e1b04b9";
-const pangolinAddress = "0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106";
+// avalance local setup
+// const WAVAX = "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7";
+// const aUSDC = "0xfaB550568C688d5D8A52C7d794cb93Edc26eC0eC";
+// const squidAddress = "0x9BDFDef799b4884D134c6783d0Ae98079e1b04b9";
+// const pangolinAddress = "0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106";
 
+// avalance testnet setup
+const WAVAX = "0xd00ae08403B9bbb9124bB305C09058E32C39A48c"; //testnet
+const aUSDC = "0x57F1c63497AEe0bE305B8852b354CEc793da43bB"; // testnet
+const squidAddress = "0x5D2422453eF21A394ad87B57Fb566d0F67C4b113"; // testnet
+const pangolinAddress = "0x2D99ABD9008Dc933ff5c0CD271B88309593aB921"; // testnet
+
+// required for non native tokens WAVAX or axlUSDC
 const approveToken = async (
   token: Contract,
   executable: string,
@@ -32,6 +39,7 @@ const approveToken = async (
   }
 };
 
+// generates encoding for multicall
 const generateTradeData = (swaps: any) => {
   const tradeDataArray = swaps.map((swap: any) => {
     return [swap.router, swap.data, swap.tokenOut, swap.inputPos];
@@ -42,6 +50,7 @@ const generateTradeData = (swaps: any) => {
   );
 };
 
+// generate squid calldata encoding
 const squidSwap = async (signer: ethers.Wallet, squidContract: Contract) => {
   // create contract instance
   const pangolinRouter = new Contract(
@@ -77,20 +86,35 @@ const squidSwap = async (signer: ethers.Wallet, squidContract: Contract) => {
   const signer = new ethers.Wallet(privateKey, provider);
 
   // amount to send 1 AVAX
-  const amountIn = ethers.utils.parseUnits("1", 18);
+  const amountIn = ethers.utils.parseUnits("0.1", 18);
+  const targetNetwork = "cosmoshub";
+  const targetAddress = "cosmos1w33cd3nf4v5539xk5l4nazxhla4jkgu6sw4jxf";
 
   const squidContract = new Contract(squidAddress, SquidExecutable, signer);
+
+  const balance = await provider.getBalance(signer.address);
+  console.log(
+    `Account ${signer.address} balance: ${balance.toBigInt() / BigInt(1e18)}`
+  );
+  console.log(balance.toString());
+  console.log(amountIn.toString());
+
+  assert.equal(
+    balance.toBigInt() > amountIn.toBigInt(),
+    true,
+    `Insufficent AVAX Balance in account ${signer.address}`
+  );
 
   const tradeData = squidSwap(signer, squidContract);
   const tx = await (
     await squidContract.tradeSend(
       AddressZero,
       amountIn,
-      "Ethereum",
-      signer.address,
-      "axlUSDC",
+      targetNetwork,
+      targetAddress,
+      "aUSDC",
       tradeData,
-      { value: amountIn }
+      { value: amountIn, gasLimit: 1e6 }
     )
   ).wait();
 
