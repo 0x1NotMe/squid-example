@@ -14,6 +14,7 @@ const privateKey = process.env.privateKey as string;
 const ethereumRpc = process.env.ethereumRpcEndPoint as string;
 const avalanceRpc = process.env.avalanceRpcEndPoint as string;
 const moonbeamRpc = process.env.moonbeamRpcEndPoint as string;
+const targetAddress = process.env.targetAddress as string;
 
 // avalance local setup
 // const WAVAX = "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7";
@@ -80,6 +81,7 @@ const squidSwap = async (signer: ethers.Wallet, squidContract: Contract) => {
 
 (async () => {
   assert.notEqual(avalanceRpc, undefined, ".env: avalanceRpcEndPoint missing");
+  assert.notEqual(targetAddress, undefined, ".env targetAddress missing");
 
   // create wallet and provider
   const provider = new ethers.providers.JsonRpcProvider(avalanceRpc);
@@ -88,7 +90,6 @@ const squidSwap = async (signer: ethers.Wallet, squidContract: Contract) => {
   // amount to send 1 AVAX
   const amountIn = ethers.utils.parseUnits("0.1", 18);
   const targetNetwork = "cosmoshub";
-  const targetAddress = "cosmos1w33cd3nf4v5539xk5l4nazxhla4jkgu6sw4jxf";
 
   const squidContract = new Contract(squidAddress, SquidExecutable, signer);
 
@@ -96,8 +97,6 @@ const squidSwap = async (signer: ethers.Wallet, squidContract: Contract) => {
   console.log(
     `Account ${signer.address} balance: ${balance.toBigInt() / BigInt(1e18)}`
   );
-  console.log(balance.toString());
-  console.log(amountIn.toString());
 
   assert.equal(
     balance.toBigInt() > amountIn.toBigInt(),
